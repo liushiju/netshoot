@@ -240,18 +240,18 @@ make archive-all
 The generated artifacts are written to `dist/` as individual compressed archives:
 
 ```text
-dist/netshoot-0.1-linux-amd64.tar.gz
-dist/netshoot-0.1-linux-arm64.tar.gz
+dist/netshoot-0.1-linux-amd64-package.tar.gz
+dist/netshoot-0.1-linux-arm64-package.tar.gz
 ```
 
 ## CI
 
 GitHub Actions builds `amd64` and `arm64` separately on every `main` push, pull request, or manual trigger. Each run uploads:
 
-    netshoot-<sha>-linux-amd64.tar.gz
-    netshoot-<sha>-linux-amd64.tar.gz.sha256
-    netshoot-<sha>-linux-arm64.tar.gz
-    netshoot-<sha>-linux-arm64.tar.gz.sha256
+    netshoot-<sha>-linux-amd64-package.tar.gz
+    netshoot-<sha>-linux-amd64-package.tar.gz.sha256
+    netshoot-<sha>-linux-arm64-package.tar.gz
+    netshoot-<sha>-linux-arm64-package.tar.gz.sha256
 
 ## Release Packaging
 
@@ -259,19 +259,20 @@ Pushing a tag like `v0.1.0` triggers the release workflow and produces offline i
 
 If a tag already exists, you can run the `release-buildx` workflow manually and pass `release_version=v0.1.0`.
 
-The image is built as `netshoot:<tag>`, then exported with `docker save`, and finally compressed into a `.tar.gz` archive.
+The image is built as `netshoot:<tag>`, exported with `docker save` as a `.tar`, and then wrapped in an outer `.tar.gz` package.
 
 Each GitHub Release upload contains:
 
-    netshoot-v0.1.0-linux-amd64.tar.gz
-    netshoot-v0.1.0-linux-amd64.tar.gz.sha256
-    netshoot-v0.1.0-linux-arm64.tar.gz
-    netshoot-v0.1.0-linux-arm64.tar.gz.sha256
+    netshoot-v0.1.0-linux-amd64-package.tar.gz
+    netshoot-v0.1.0-linux-amd64-package.tar.gz.sha256
+    netshoot-v0.1.0-linux-arm64-package.tar.gz
+    netshoot-v0.1.0-linux-arm64-package.tar.gz.sha256
 
 Load an offline package with:
 
 ```bash
-gunzip -c netshoot-v0.1.0-linux-amd64.tar.gz | docker load
+tar -xzf netshoot-v0.1.0-linux-amd64-package.tar.gz
+docker load -i netshoot-v0.1.0-linux-amd64.tar
 ```
 
 ## **Sample Use-cases**

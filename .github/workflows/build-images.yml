@@ -41,17 +41,17 @@ jobs:
       - name: Export image archive
         run: docker save --output ${{ runner.temp }}/netshoot-${{ github.sha }}-linux-${{ matrix.arch }}.tar netshoot:${{ github.sha }}
 
-      - name: Compress archive
-        run: gzip -f ${{ runner.temp }}/netshoot-${{ github.sha }}-linux-${{ matrix.arch }}.tar
+      - name: Package archive
+        run: tar -C ${{ runner.temp }} -czf ${{ runner.temp }}/netshoot-${{ github.sha }}-linux-${{ matrix.arch }}-package.tar.gz netshoot-${{ github.sha }}-linux-${{ matrix.arch }}.tar
 
       - name: Generate checksum
-        run: sha256sum ${{ runner.temp }}/netshoot-${{ github.sha }}-linux-${{ matrix.arch }}.tar.gz > ${{ runner.temp }}/netshoot-${{ github.sha }}-linux-${{ matrix.arch }}.tar.gz.sha256
+        run: sha256sum ${{ runner.temp }}/netshoot-${{ github.sha }}-linux-${{ matrix.arch }}-package.tar.gz > ${{ runner.temp }}/netshoot-${{ github.sha }}-linux-${{ matrix.arch }}-package.tar.gz.sha256
 
       - name: Upload ${{ matrix.arch }} artifact
         uses: actions/upload-artifact@v4
         with:
-          name: netshoot-${{ github.sha }}-linux-${{ matrix.arch }}
+          name: netshoot-${{ github.sha }}-linux-${{ matrix.arch }}-package
           path: |
-            ${{ runner.temp }}/netshoot-${{ github.sha }}-linux-${{ matrix.arch }}.tar.gz
-            ${{ runner.temp }}/netshoot-${{ github.sha }}-linux-${{ matrix.arch }}.tar.gz.sha256
+            ${{ runner.temp }}/netshoot-${{ github.sha }}-linux-${{ matrix.arch }}-package.tar.gz
+            ${{ runner.temp }}/netshoot-${{ github.sha }}-linux-${{ matrix.arch }}-package.tar.gz.sha256
           if-no-files-found: error
