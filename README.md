@@ -253,6 +253,25 @@ GitHub Actions builds `amd64` and `arm64` separately on every `main` push, pull 
     netshoot-linux-arm64.tar.gz
     netshoot-linux-arm64.tar.gz.sha256
 
+## Release Packaging
+
+Pushing a tag like `v0.1.0` triggers the release workflow and produces offline image archives instead of pushing to Docker Hub or GHCR.
+
+If a tag already exists, you can run the `release-buildx` workflow manually and pass `release_version=v0.1.0`.
+
+Each GitHub Release upload contains:
+
+    netshoot-v0.1.0-linux-amd64.tar.gz
+    netshoot-v0.1.0-linux-amd64.tar.gz.sha256
+    netshoot-v0.1.0-linux-arm64.tar.gz
+    netshoot-v0.1.0-linux-arm64.tar.gz.sha256
+
+Load an offline package with:
+
+```bash
+gunzip -c netshoot-v0.1.0-linux-amd64.tar.gz | docker load
+```
+
 ## **Sample Use-cases**
 
 ### iperf

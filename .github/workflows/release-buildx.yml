@@ -3,58 +3,73 @@ name: release-buildx
 on:
   push:
     tags:
-      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: "Release tag to package, for example v0.1.0"
+        required: true
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
-  buildx:
+  build-release-assets:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - amd64
+          - arm64
     steps:
-      -
-        name: Checkout
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.ref }}
-      -
-        name: Set up QEMU
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: arm64,amd64
-      -
-        name: Set up Docker Buildx
-        id: buildx
+          platforms: amd64,arm64
+
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      -
-        name: Available platforms
-        run: echo ${{ steps.buildx.outputs.platforms }}
-      - name: Set Release Tag Env
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-      - 
-        name: docker hub login
-        env:
-          DOCKER_USER: ${{secrets.DOCKER_USER}}
-          DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
-        run: |
-            docker login -u $DOCKER_USER -p $DOCKER_PASSWORD 
-      - 
-        name: docker ghcr login
-        env:
-          GHCR_USER: ${{secrets.GHCR_USER}}
-          GHCR_TOKEN: ${{secrets.GHCR_TOKEN}}
-        run: |
-            docker login ghcr.io -u $GHCR_USER -p $GHCR_TOKEN
-      -
-        name: Run Buildx
-        run: |
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --output "type=image,push=true" \
-            --file ./Dockerfile \
-            --tag $GITHUB_REPOSITORY:$GITHUB_SHA \
-            --tag $GITHUB_REPOSITORY:$RELEASE_VERSION \
-            --tag $GITHUB_REPOSITORY:latest \
-            --tag ghcr.io/$GITHUB_REPOSITORY:$GITHUB_SHA \
-            --tag ghcr.io/$GITHUB_REPOSITORY:$RELEASE_VERSION \
-            --tag ghcr.io/$GITHUB_REPOSITORY:latest . 
 
+      - name: Set release version
+        run: |
+          if [ -n "${{ github.event.inputs.release_version || '' }}" ]; then
+            echo "RELEASE_VERSION=${{ github.event.inputs.release_version }}" >> "$GITHUB_ENV"
+          else
+            echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> "$GITHUB_ENV"
+          fi
 
-            
+      - name: Build ${{ matrix.arch }} offline image archive
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/${{ matrix.arch }}
+          outputs: type=docker,dest=${{ runner.temp }}/netshoot-${{ env.RELEASE_VERSION }}-linux-${{ matrix.arch }}.tar
+
+      - name: Compress archive
+        run: gzip -f ${{ runner.temp }}/netshoot-${{ env.RELEASE_VERSION }}-linux-${{ matrix.arch }}.tar
+
+      - name: Generate checksum
+        run: sha256sum ${{ runner.temp }}/netshoot-${{ env.RELEASE_VERSION }}-linux-${{ matrix.arch }}.tar.gz > ${{ runner.temp }}/netshoot-${{ env.RELEASE_VERSION }}-linux-${{ matrix.arch }}.tar.gz.sha256
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: netshoot-${{ env.RELEASE_VERSION }}-linux-${{ matrix.arch }}
+          path: |
+            ${{ runner.temp }}/netshoot-${{ env.RELEASE_VERSION }}-linux-${{ matrix.arch }}.tar.gz
+            ${{ runner.temp }}/netshoot-${{ env.RELEASE_VERSION }}-linux-${{ matrix.arch }}.tar.gz.sha256
+          if-no-files-found: error
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ runner.temp }}/netshoot-${{ env.RELEASE_VERSION }}-linux-${{ matrix.arch }}.tar.gz
+            ${{ runner.temp }}/netshoot-${{ env.RELEASE_VERSION }}-linux-${{ matrix.arch }}.tar.gz.sha256
+          generate_release_notes: true
