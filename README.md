@@ -240,24 +240,26 @@ make archive-all
 The generated artifacts are written to `dist/` as individual compressed archives:
 
 ```text
-dist/nicolaka-netshoot-0.1-linux-amd64.tar.gz
-dist/nicolaka-netshoot-0.1-linux-arm64.tar.gz
+dist/netshoot-0.1-linux-amd64.tar.gz
+dist/netshoot-0.1-linux-arm64.tar.gz
 ```
 
 ## CI
 
 GitHub Actions builds `amd64` and `arm64` separately on every `main` push, pull request, or manual trigger. Each run uploads:
 
-    netshoot-linux-amd64.tar.gz
-    netshoot-linux-amd64.tar.gz.sha256
-    netshoot-linux-arm64.tar.gz
-    netshoot-linux-arm64.tar.gz.sha256
+    netshoot-<sha>-linux-amd64.tar.gz
+    netshoot-<sha>-linux-amd64.tar.gz.sha256
+    netshoot-<sha>-linux-arm64.tar.gz
+    netshoot-<sha>-linux-arm64.tar.gz.sha256
 
 ## Release Packaging
 
 Pushing a tag like `v0.1.0` triggers the release workflow and produces offline image archives instead of pushing to Docker Hub or GHCR.
 
 If a tag already exists, you can run the `release-buildx` workflow manually and pass `release_version=v0.1.0`.
+
+The image is built as `netshoot:<tag>`, then exported with `docker save`, and finally compressed into a `.tar.gz` archive.
 
 Each GitHub Release upload contains:
 

@@ -49,7 +49,11 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/${{ matrix.arch }}
-          outputs: type=docker,dest=${{ runner.temp }}/netshoot-${{ env.RELEASE_VERSION }}-linux-${{ matrix.arch }}.tar
+          tags: netshoot:${{ env.RELEASE_VERSION }}
+          load: true
+
+      - name: Export image archive
+        run: docker save --output ${{ runner.temp }}/netshoot-${{ env.RELEASE_VERSION }}-linux-${{ matrix.arch }}.tar netshoot:${{ env.RELEASE_VERSION }}
 
       - name: Compress archive
         run: gzip -f ${{ runner.temp }}/netshoot-${{ env.RELEASE_VERSION }}-linux-${{ matrix.arch }}.tar
