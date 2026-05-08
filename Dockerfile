@@ -1,11 +1,12 @@
-FROM debian:stable-slim as fetcher
+FROM debian:stable-slim AS fetcher
+ARG TARGETARCH
 COPY build/fetch_binaries.sh /tmp/fetch_binaries.sh
 
 RUN apt-get update && apt-get install -y \
   curl \
   wget
 
-RUN /tmp/fetch_binaries.sh
+RUN TARGETARCH="${TARGETARCH}" /tmp/fetch_binaries.sh
 
 FROM alpine:3.23.2
 
@@ -52,6 +53,8 @@ RUN set -ex \
     nmap-nping \
     nmap-scripts \
     openssl \
+    mysql-client \
+    postgresql-client \
     py3-pip \
     py3-setuptools \
     scapy \

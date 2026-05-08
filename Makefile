@@ -1,21 +1,42 @@
-.PHONY: build-x86 build-arm64 push all
+.PHONY: build-amd64 build-arm64 build-x86 build-all \
+	archive-amd64 archive-arm64 archive-x86 archive-all push all
 
-# Build Vars
-IMAGENAME=nicolaka/netshoot
-VERSION=0.1
+IMAGENAME ?= nicolaka/netshoot
+VERSION ?= 0.1
+DIST_DIR ?= dist
+IMAGE_REF := $(IMAGENAME):$(VERSION)
+ARCHIVE_PREFIX := $(subst /,-,$(IMAGENAME))-$(VERSION)
 
+.DEFAULT_GOAL := archive-all
 
-.DEFAULT_GOAL := all
+build-amd64:
+	@docker buildx build --platform linux/amd64 --load -t $(IMAGE_REF)-amd64 .
 
-build-x86:
-	    @docker build --platform linux/amd64 -t ${IMAGENAME}:${VERSION} .
 build-arm64:
-		@docker build --platform linux/arm64 -t ${IMAGENAME}:${VERSION} .
+	@docker buildx build --platform linux/arm64 --load -t $(IMAGE_REF)-arm64 .
+
+build-x86: build-amd64
+
 build-all:
-		@docker buildx build --platform linux/amd64,linux/arm64 --output "type=image,push=false" --file ./Dockerfile .
+	@docker buildx build --platform linux/amd64,linux/arm64 --output type=image,push=false --file ./Dockerfile .
+
+archive-amd64:
+	@mkdir -p $(DIST_DIR)
+	@docker buildx build --platform linux/amd64 --load --tag $(IMAGE_REF)-amd64 .
+	@docker save --output $(DIST_DIR)/$(ARCHIVE_PREFIX)-linux-amd64.tar $(IMAGE_REF)-amd64
+	@gzip -f $(DIST_DIR)/$(ARCHIVE_PREFIX)-linux-amd64.tar
+
+archive-arm64:
+	@mkdir -p $(DIST_DIR)
+	@docker buildx build --platform linux/arm64 --load --tag $(IMAGE_REF)-arm64 .
+	@docker save --output $(DIST_DIR)/$(ARCHIVE_PREFIX)-linux-arm64.tar $(IMAGE_REF)-arm64
+	@gzip -f $(DIST_DIR)/$(ARCHIVE_PREFIX)-linux-arm64.tar
+
+archive-x86: archive-amd64
+
+archive-all: archive-amd64 archive-arm64
+
 push:
-	 	@docker push ${IMAGENAME}:${VERSION} 
-all: build-all push
+	@docker push $(IMAGE_REF)
 
-
-		
+all: archive-all

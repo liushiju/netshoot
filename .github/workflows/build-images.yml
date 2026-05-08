@@ -1,0 +1,57 @@
+name: build-images
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - amd64
+          - arm64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.arch }} image archive
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/${{ matrix.arch }}
+          tags: netshoot:${{ github.sha }}-${{ matrix.arch }}
+          load: true
+
+      - name: Export image archive
+        run: docker save --output ${{ runner.temp }}/netshoot-linux-${{ matrix.arch }}.tar netshoot:${{ github.sha }}-${{ matrix.arch }}
+
+      - name: Compress archive
+        run: gzip -f ${{ runner.temp }}/netshoot-linux-${{ matrix.arch }}.tar
+
+      - name: Generate checksum
+        run: sha256sum ${{ runner.temp }}/netshoot-linux-${{ matrix.arch }}.tar.gz > ${{ runner.temp }}/netshoot-linux-${{ matrix.arch }}.tar.gz.sha256
+
+      - name: Upload ${{ matrix.arch }} artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: netshoot-linux-${{ matrix.arch }}
+          path: |
+            ${{ runner.temp }}/netshoot-linux-${{ matrix.arch }}.tar.gz
+            ${{ runner.temp }}/netshoot-linux-${{ matrix.arch }}.tar.gz.sha256
+          if-no-files-found: error

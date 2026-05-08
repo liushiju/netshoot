@@ -189,6 +189,8 @@ To troubleshoot these issues, `netshoot` includes a set of powerful tools as rec
     nmap-nping \
     nmap-scripts \
     openssl \
+    mysql-client \
+    postgresql-client \
     py3-pip \
     py3-setuptools \
     scapy \
@@ -217,6 +219,39 @@ Additionally, the following binaries are included:
     termshark
     grpcurl
     fortio
+
+## Build and Packaging
+
+Build architecture-specific image archives locally:
+
+```bash
+make archive-amd64
+make archive-arm64
+```
+
+`make archive-x86` is provided as an alias for `make archive-amd64`.
+
+Build both archives in one shot:
+
+```bash
+make archive-all
+```
+
+The generated artifacts are written to `dist/` as individual compressed archives:
+
+```text
+dist/nicolaka-netshoot-0.1-linux-amd64.tar.gz
+dist/nicolaka-netshoot-0.1-linux-arm64.tar.gz
+```
+
+## CI
+
+GitHub Actions builds `amd64` and `arm64` separately on every `main` push, pull request, or manual trigger. Each run uploads:
+
+    netshoot-linux-amd64.tar.gz
+    netshoot-linux-amd64.tar.gz.sha256
+    netshoot-linux-arm64.tar.gz
+    netshoot-linux-arm64.tar.gz.sha256
 
 ## **Sample Use-cases**
 
@@ -363,5 +398,3 @@ Feel free to contribute networking troubleshooting tools and use-cases by openin
 * If you're building the tool from source, make sure you leverage the multi-stage build process and update the `build/fetch_binaries.sh` script 
 * Update the README's list of included packages AND include a section on how to use the tool
 * If the tool you're adding supports multi-platform, please make sure you highlight that.
-
-

@@ -8,14 +8,24 @@ get_latest_release() {
 }
 
 
-ARCH=$(uname -m)
-case $ARCH in
-    x86_64)
-        ARCH=amd64
-        ;;
-    aarch64)
-        ARCH=arm64
-        ;;
+ARCH="${TARGETARCH:-}"
+if [ -z "$ARCH" ]; then
+  ARCH=$(uname -m)
+fi
+
+case "$ARCH" in
+  x86_64)
+    ARCH=amd64
+    ;;
+  aarch64)
+    ARCH=arm64
+    ;;
+  amd64|arm64)
+    ;;
+  *)
+    echo "unsupported architecture: $ARCH" >&2
+    exit 1
+    ;;
 esac
 
 get_ctop() {
@@ -83,4 +93,3 @@ get_calicoctl
 get_termshark
 get_grpcurl
 get_fortio
-
